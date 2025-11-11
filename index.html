@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <title>MineSense - Dashboard Sensores</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Luxon -->
+  <script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js"></script>
+  <!-- Adaptador de Luxon para Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1"></script>
+
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+  <!-- JS externo -->
+  <script src="main.js" defer></script>
+
+</head>
+
+<body>
+  <!-- Barra superior -->
+  <div class="topbar">
+    <h1>MineSense</h1>
+    <div class="status">
+      <div id="status-indicator" class="indicator disconnected"></div>
+      <span id="status-text">Desconectado</span>
+    </div>
+  </div>
+
+
+  <!-- Sección de control -->
+  <div class="control-section">
+    <h2>Control de Actuadores</h2>
+    <div class="buttons">
+      <div class="group">
+        <h4>Modo Automático</h4>
+        <button id="btn-auto">Activar</button>
+        <button id="btn-auto-off" class="off">Desactivar</button>
+      </div>
+      <div class="group">
+        <h4>Luz</h4>
+        <button id="btn-luz-on">Encender</button>
+        <button id="btn-luz-off" class="off">Apagar</button>
+      </div>
+      <div class="group">
+        <h4>Alarma</h4>
+        <button id="btn-alarma-on">Activar</button>
+        <button id="btn-alarma-off" class="off">Desactivar</button>
+      </div>
+      <div class="group">
+        <h4>Buzzer</h4>
+        <button id="btn-buzz-on">Encender</button>
+        <button id="btn-buzz-off" class="off">Apagar</button>
+      </div>
+      <div class="group">
+        <h4>Ventilador</h4>
+        <button id="btn-motor-on">Encender</button>
+        <button id="btn-motor-off" class="off">Apagar</button>
+      </div>
+    </div>
+  </div>
+
+  <br>
+
+  <!-- Contenedor principal -->
+  <div class="container">
+    <!-- Tarjetas de sensores -->
+    <div class="cards">
+      <div class="card">
+        <h3>Temperatura</h3>
+        <p id="temp-value">-- °C</p>
+        <canvas id="tempChart"></canvas>
+      </div>
+      <div class="card">
+        <h3>Humedad</h3>
+        <p id="hum-value">-- %</p>
+        <canvas id="humChart"></canvas>
+      </div>
+      <div class="card">
+        <h3>Presión</h3>
+        <p id="pres-value">-- hPa</p>
+        <canvas id="presChart"></canvas>
+      </div>
+      <div class="card">
+        <h3>Luz</h3>
+        <p id="luz-value">-- %</p>
+        <canvas id="luzChart"></canvas>
+      </div>
+      <div class="card">
+        <h3>Calidad del Aire</h3>
+        <p id="mq-value">-- %</p>
+        <canvas id="mqChart"></canvas>
+      </div>
+    </div>
+
+
+  </div>
+
+  <script src="main.js"></script>
+</body>
+
+</html>
