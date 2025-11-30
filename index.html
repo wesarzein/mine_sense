@@ -4,105 +4,147 @@
 <head>
   <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MineSense - Dashboard Sensores</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-  <!-- Chart.js -->
+  <!-- Chart.js + Luxon + adapter -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Luxon -->
   <script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js"></script>
-  <!-- Adaptador de Luxon para Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1"></script>
 
+  <!-- MQTT -->
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
-  <!-- JS externo -->
-  <script src="main.js" defer></script>
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <link rel="stylesheet" href="styles.css">
 
 </head>
 
 <body>
-  <!-- Barra superior -->
+
   <div class="topbar">
-    <h1>MineSense</h1>
-    <div class="status">
-      <div id="status-indicator" class="indicator disconnected"></div>
-      <span id="status-text">Desconectado</span>
+    <h1><i class="fa-solid fa-industry"></i> MineSense</h1>
+    <div style="display:flex; gap:12px; align-items:center;">
+      <div class="status">
+        <div id="status-indicator" class="indicator disconnected"></div>
+        <span id="status-text">Desconectado</span>
+      </div>
+      <button id="login-show" class="login-btn">Iniciar sesión</button>
+      <button id="logout-btn" class="logout-btn" style="display:none;">Cerrar sesión <i
+          class="fa-solid fa-right-from-bracket" style="margin-left:8px;"></i></button>
     </div>
   </div>
 
-
-  <!-- Sección de control -->
-  <div class="control-section">
-    <h2>Control de Actuadores</h2>
-    <div class="buttons">
-      <div class="group">
-        <h4>Modo Aut.</h4>
-        <button id="btn-auto">Activar</button>
-        <button id="btn-auto-off" class="off">Desactivar</button>
+  <!-- Login modal (hidden by default) -->
+  <div id="login-modal" class="login-modal" style="display:none;">
+    <div class="login-panel" role="dialog" aria-modal="true" aria-label="Login">
+      <h3>Acceso administrador</h3>
+      <label for="user">Usuario</label>
+      <input id="user" type="text" placeholder="usuario">
+      <label for="pass">Contraseña</label>
+      <input id="pass" type="password" placeholder="contraseña">
+      <div class="actions" style="margin-top:6px;">
+        <button id="login-cancel" class="btn-secondary">Cancelar</button>
+        <button id="login-btn" class="btn-primary">Entrar</button>
       </div>
-      <div class="group">
-        <h4>Luz</h4>
-        <button id="btn-luz-on">Encender</button>
-        <button id="btn-luz-off" class="off">Apagar</button>
-      </div>
-      <div class="group">
-        <h4>Alarma</h4>
-        <button id="btn-alarma-on">Activar</button>
-        <button id="btn-alarma-off" class="off">Desactivar</button>
-      </div>
-      <div class="group">
-        <h4>Buzzer</h4>
-        <button id="btn-buzz-on">Encender</button>
-        <button id="btn-buzz-off" class="off">Apagar</button>
-      </div>
-      <div class="group">
-        <h4>Ventilador</h4>
-        <button id="btn-motor-on">Encender</button>
-        <button id="btn-motor-off" class="off">Apagar</button>
-      </div>
+      <p style="font-size:0.8rem; color:#cfd8dc; margin-top:10px;">Credenciales: <code>adm</code> / <code>pass123</code>
+      </p>
+      <p id="login-error" style="color:#ff8a80; font-size:0.85rem; display:none; margin-top:6px;"></p>
     </div>
   </div>
 
-  <br>
-
-  <!-- Contenedor principal -->
   <div class="container">
-    <!-- Tarjetas de sensores -->
+
+    <!-- Control: visible solo cuando autenticado -->
+    <div id="control-section" class="control-section" aria-hidden="true">
+      <h2>Control de Actuadores</h2>
+      <div class="buttons">
+        <div class="group">
+          <h4>Modo Aut.</h4>
+          <button id="btn-auto" class="icon-btn"><i class="fa-solid fa-power-off"></i></button>
+          <button id="btn-auto-off" class="icon-btn off"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div class="group">
+          <h4>Luz</h4>
+          <button id="btn-luz-on" class="icon-btn"><i class="fa-solid fa-lightbulb"></i></button>
+          <button id="btn-luz-off" class="icon-btn off"><i class="fa-regular fa-lightbulb"></i></button>
+        </div>
+
+        <div class="group">
+          <h4>Alarma</h4>
+          <button id="btn-alarma-on" class="icon-btn"><i class="fa-solid fa-bell"></i></button>
+          <button id="btn-alarma-off" class="icon-btn off"><i class="fa-regular fa-bell"></i></button>
+        </div>
+
+        <div class="group">
+          <h4>Buzzer</h4>
+          <button id="btn-buzz-on" class="icon-btn"><i class="fa-solid fa-volume-high"></i></button>
+          <button id="btn-buzz-off" class="icon-btn off"><i class="fa-solid fa-volume-xmark"></i></button>
+        </div>
+
+        <div class="group">
+          <h4>Ventilador</h4>
+          <button id="btn-motor-on" class="icon-btn"><i class="fa-solid fa-fan"></i></button>
+          <button id="btn-motor-off" class="icon-btn off"><i class="fa-solid fa-stop"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráficas públicas -->
     <div class="cards">
       <div class="card">
-        <h3>Temperatura</h3>
-        <p id="temp-value">-- °C</p>
+        <h3>Temperatura <i class="fa-solid fa-temperature-half" style="margin-left:8px;color:#ff6b6b;"></i></h3>
+        <p id="temp-value" class="value">-- °C</p>
         <canvas id="tempChart"></canvas>
       </div>
+
       <div class="card">
-        <h3>Humedad</h3>
-        <p id="hum-value">-- %</p>
-        <canvas id="humChart"></canvas>
+        <h3>Humedad <i class="fa-solid fa-droplet" style="margin-left:8px;color:#4d96ff;"></i></h3>
+        <p id="hum-value" class="value">-- %</p>
+        <div class="centered">
+          <div>
+            <div class="hum-meter" aria-hidden="true">
+              <div id="hum-fill" class="hum-fill" style="height:8%;"></div>
+            </div>
+            <div id="hum-perc" class="hum-perc">-- %</div>
+          </div>
+        </div>
       </div>
+
       <div class="card">
-        <h3>Presión</h3>
-        <p id="pres-value">-- hPa</p>
-        <canvas id="presChart"></canvas>
+        <h3>Presión <i class="fa-solid fa-gauge" style="margin-left:8px;color:#ffd93d;"></i></h3>
+        <p id="pres-value" class="value">-- hPa</p>
+        <div class="centered">
+          <div style="width:240px; max-width:100%; position:relative;">
+            <canvas id="presChart"></canvas>
+            <div id="pres-center" class="gauge-center" style="font-size:1rem;">--</div>
+          </div>
+        </div>
       </div>
+
       <div class="card">
-        <h3>Luz</h3>
-        <p id="luz-value">-- %</p>
+        <h3>Luz <i class="fa-solid fa-sun" style="margin-left:8px;color:#ffb74d;"></i></h3>
+        <p id="luz-value" class="value">-- %</p>
         <canvas id="luzChart"></canvas>
       </div>
-      <div class="card">
-        <h3>Calidad del Aire</h3>
-        <p id="mq-value">-- %</p>
-        <canvas id="mqChart"></canvas>
+
+      <div class="card" style="grid-column: span 2;">
+        <h3>Calidad del Aire <i class="fa-solid fa-wind" style="margin-left:8px;color:#81c784;"></i></h3>
+        <p id="mq-value" class="value">--</p>
+        <div class="centered">
+          <div style="width:260px; max-width:100%; position:relative;">
+            <canvas id="mqChart"></canvas>
+            <div id="mq-center" class="gauge-center" style="font-size:1rem;">--</div>
+          </div>
+        </div>
       </div>
     </div>
-
 
   </div>
 
   <script src="main.js"></script>
+
 </body>
 
 </html>
