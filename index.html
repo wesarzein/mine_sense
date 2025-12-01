@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MineSense - Dashboard Sensores</title>
+  <title>MineSense</title>
 
   <!-- Chart.js + Luxon + adapter -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -47,8 +47,6 @@
         <button id="login-cancel" class="btn-secondary">Cancelar</button>
         <button id="login-btn" class="btn-primary">Entrar</button>
       </div>
-      <p style="font-size:0.8rem; color:#cfd8dc; margin-top:10px;">Credenciales: <code>adm</code> / <code>pass123</code>
-      </p>
       <p id="login-error" style="color:#ff8a80; font-size:0.85rem; display:none; margin-top:6px;"></p>
     </div>
   </div>
@@ -93,50 +91,54 @@
 
     <!-- Gráficas públicas -->
     <div class="cards">
+      <!-- En la tarjeta de Temperatura -->
       <div class="card">
         <h3>Temperatura <i class="fa-solid fa-temperature-half" style="margin-left:8px;color:#ff6b6b;"></i></h3>
         <p id="temp-value" class="value">-- °C</p>
-        <canvas id="tempChart"></canvas>
-      </div>
-
-      <div class="card">
-        <h3>Humedad <i class="fa-solid fa-droplet" style="margin-left:8px;color:#4d96ff;"></i></h3>
-        <p id="hum-value" class="value">-- %</p>
-        <div class="centered">
-          <div>
-            <div class="hum-meter" aria-hidden="true">
-              <div id="hum-fill" class="hum-fill" style="height:8%;"></div>
-            </div>
-            <div id="hum-perc" class="hum-perc">-- %</div>
-          </div>
+        <div class="chart-container">
+          <canvas id="tempChart"></canvas>
         </div>
       </div>
 
+      <!-- En la tarjeta de Humedad -->
+      <div class="card">
+        <h3>Humedad <i class="fa-solid fa-droplet" style="margin-left:8px;color:#4d96ff;"></i></h3>
+        <p id="hum-value" class="value">-- %</p>
+        <div class="hum-container">
+          <div class="hum-meter" aria-hidden="true">
+            <div id="hum-fill" class="hum-fill" style="height:8%;"></div>
+          </div>
+          <div id="hum-perc" class="hum-perc">-- %</div>
+        </div>
+      </div>
+
+      <!-- En la tarjeta de Presión -->
       <div class="card">
         <h3>Presión <i class="fa-solid fa-gauge" style="margin-left:8px;color:#ffd93d;"></i></h3>
         <p id="pres-value" class="value">-- hPa</p>
         <div class="centered">
-          <div style="width:240px; max-width:100%; position:relative;">
+          <div class="gauge-container">
             <canvas id="presChart"></canvas>
             <div id="pres-center" class="gauge-center" style="font-size:1rem;">--</div>
           </div>
         </div>
       </div>
 
+      <!-- En la tarjeta de Luz -->
       <div class="card">
         <h3>Luz <i class="fa-solid fa-sun" style="margin-left:8px;color:#ffb74d;"></i></h3>
         <p id="luz-value" class="value">-- %</p>
-        <canvas id="luzChart"></canvas>
+        <div class="chart-container">
+          <canvas id="luzChart"></canvas>
+        </div>
       </div>
 
+      <!-- En la tarjeta de Calidad del Aire -->
       <div class="card" style="grid-column: span 2;">
         <h3>Calidad del Aire <i class="fa-solid fa-wind" style="margin-left:8px;color:#81c784;"></i></h3>
         <p id="mq-value" class="value">--</p>
-        <div class="centered">
-          <div style="width:260px; max-width:100%; position:relative;">
-            <canvas id="mqChart"></canvas>
-            <div id="mq-center" class="gauge-center" style="font-size:1rem;">--</div>
-          </div>
+        <div class="chart-container">
+          <canvas id="mqChart"></canvas>
         </div>
       </div>
     </div>

@@ -1,19 +1,49 @@
 document.addEventListener('DOMContentLoaded', () => {
-
-  /* ============================
-        LOGIN
-  ============================ */
+  // Constantes de configuración
   const LOGIN_USER = 'admin';
   const LOGIN_PASS = '1234';
+  const MAX_POINTS = 50;
 
-  const loginModal = document.getElementById('login-modal');
-  const loginShow = document.getElementById('login-show');
-  const loginBtn = document.getElementById('login-btn');
-  const loginCancel = document.getElementById('login-cancel');
-  const loginError = document.getElementById('login-error');
-  const logoutBtn = document.getElementById('logout-btn');
-  const controlSection = document.getElementById('control-section');
+  // Elementos del DOM
+  const elements = {
+    loginModal: document.getElementById('login-modal'),
+    loginShow: document.getElementById('login-show'),
+    loginBtn: document.getElementById('login-btn'),
+    loginCancel: document.getElementById('login-cancel'),
+    loginError: document.getElementById('login-error'),
+    logoutBtn: document.getElementById('logout-btn'),
+    controlSection: document.getElementById('control-section'),
+    statusIndicator: document.getElementById('status-indicator'),
+    statusText: document.getElementById('status-text'),
+    humFill: document.getElementById('hum-fill'),
+    humPerc: document.getElementById('hum-perc'),
+    tempVal: document.getElementById('temp-value'),
+    humVal: document.getElementById('hum-value'),
+    presVal: document.getElementById('pres-value'),
+    luzVal: document.getElementById('luz-value'),
+    mqVal: document.getElementById('mq-value'),
+    presCenter: document.getElementById('pres-center')
+  };
 
+  // Configuración MQTT
+  const mqttOptions = {
+    username: 'wzzz1',
+    password: 'wesarMDFK21',
+    keepalive: 60,
+    clean: true,
+    reconnectPeriod: 5000,
+    connectTimeout: 30000
+  };
+
+  // Estado de la aplicación
+  const state = {
+    charts: {},
+    mqttClient: null
+  };
+
+  /* ============================
+          AUTENTICACIÓN
+  ============================ */
   function isAuthenticated() {
     return sessionStorage.getItem('ms_auth') === '1';
   }
@@ -25,115 +55,83 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateAuthUI() {
-    if (isAuthenticated()) {
-      controlSection.classList.add('visible');
-      controlSection.setAttribute('aria-hidden', 'false');
-      loginShow.style.display = 'none';
-      logoutBtn.style.display = 'inline-block';
-    } else {
-      controlSection.classList.remove('visible');
-      controlSection.setAttribute('aria-hidden', 'true');
-      loginShow.style.display = 'inline-block';
-      logoutBtn.style.display = 'none';
-    }
+    const isAuth = isAuthenticated();
+    elements.controlSection.classList.toggle('visible', isAuth);
+    elements.controlSection.setAttribute('aria-hidden', !isAuth);
+    elements.loginShow.style.display = isAuth ? 'none' : 'inline-block';
+    elements.logoutBtn.style.display = isAuth ? 'inline-block' : 'none';
   }
 
-  loginShow.addEventListener('click', () => {
-    loginModal.style.display = 'flex';
-    loginError.style.display = 'none';
+  // Eventos de autenticación
+  elements.loginShow.addEventListener('click', () => {
+    elements.loginModal.style.display = 'flex';
+    elements.loginError.style.display = 'none';
   });
 
-  loginCancel.addEventListener('click', () => {
-    loginModal.style.display = 'none';
+  elements.loginCancel.addEventListener('click', () => {
+    elements.loginModal.style.display = 'none';
   });
 
-  loginBtn.addEventListener('click', () => {
+  elements.loginBtn.addEventListener('click', () => {
     const u = document.getElementById('user').value.trim();
     const p = document.getElementById('pass').value;
     if (u === LOGIN_USER && p === LOGIN_PASS) {
       setAuthenticated(true);
-      loginModal.style.display = 'none';
+      elements.loginModal.style.display = 'none';
     } else {
-      loginError.style.display = 'block';
-      loginError.textContent = 'Usuario o contraseña inválidos';
+      elements.loginError.style.display = 'block';
+      elements.loginError.textContent = 'Usuario o contraseña inválidos';
     }
   });
 
-  logoutBtn.addEventListener('click', () => setAuthenticated(false));
-
-  updateAuthUI();
-
+  elements.logoutBtn.addEventListener('click', () => setAuthenticated(false));
 
   /* ============================
-        CHARTS
+          GRÁFICOS
   ============================ */
-  const maxPoints = 50;
-
-  const createLine = (ctx, label, color) => new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: [],
-      datasets: [{
-        label,
-        data: [],
-        borderColor: color,
-        backgroundColor: color,
-        fill: false,
-        tension: 0.25,
-        pointRadius: 0
-      }]
-    },
-    options: {
-      responsive: true,
-      animation: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: {
-          ticks: { display: false },
-          grid: { display: false },
-        },
-        y: {
-          ticks: { color: '#cfd8dc' },
-          grid: { color: 'rgba(255,255,255,0.03)' }
-        }
-      }
-    }
-  });
-
-  /* ============================
-      GAUGES SEMICIRCULARES
-  ============================ */
-
-  const createGauge = (ctx, max, color) => {
+  function createLineChart(ctx, label, color) {
     return new Chart(ctx, {
-      type: 'doughnut',
+      type: 'line',
       data: {
-        labels: ['value', 'rest'],
+        labels: [],
         datasets: [{
-          data: [0, max],
-          backgroundColor: [color, 'rgba(255,255,255,0.06)'],
-          borderWidth: 0
+          label,
+          data: [],
+          borderColor: color,
+          backgroundColor: color + '20',
+          fill: true,
+          tension: 0.25,
+          pointRadius: 0
         }]
       },
       options: {
         responsive: true,
-        animation: { duration: 300 },
-        rotation: -Math.PI,
-        circumference: Math.PI,
-        cutout: '75%',
-        plugins: { legend: { display: false }, tooltip: { enabled: false } }
+        maintainAspectRatio: false, 
+        animation: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: {
+            ticks: { display: false },
+            grid: { display: false },
+          },
+          y: {
+            ticks: { color: '#cfd8dc' },
+            grid: { color: 'rgba(255,255,255,0.03)' }
+          }
+        }
       }
     });
-  };
+  }
 
-
-  const createCircularGauge = (ctx, min, max, color) => {
+  function createCircularGauge(ctx, min, max, color) {
     return new Chart(ctx, {
       type: 'doughnut',
       data: {
         labels: ['value', 'rest'],
         datasets: [{
-          data: [0, 1], // se actualiza luego
+          data: [0, 1],
           backgroundColor: [color, 'rgba(255,255,255,0.06)'],
           borderWidth: 0,
           circumference: 360,
@@ -142,6 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false, 
         animation: false,
         cutout: '75%',
         plugins: {
@@ -150,186 +149,171 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     });
-  };
+  }
 
-  /* ============================
-        CREAR GRÁFICAS
-  ============================ */
-  const tempChart = createLine(document.getElementById('tempChart').getContext('2d'), 'Temperatura', '#FF6B6B');
-  const luzChart = createLine(document.getElementById('luzChart').getContext('2d'), 'Luz', '#FFB74D');
-  const presChart = createCircularGauge(
-    document.getElementById('presChart').getContext('2d'),
-    950,   // mínimo típico
-    1050,  // máximo típico
-    '#FFD93D'
-  );
-  const mqChart = createGauge(document.getElementById('mqChart').getContext('2d'), 500, '#81C784');
-
-
-  /* ============================
-        ACTUALIZADORES
-  ============================ */
-
-  const addLineData = (chart, value) => {
+  function addLineData(chart, value) {
     const now = new Date();
     chart.data.labels.push(now);
     chart.data.datasets[0].data.push(value);
-    if (chart.data.labels.length > maxPoints) {
+    if (chart.data.labels.length > MAX_POINTS) {
       chart.data.labels.shift();
       chart.data.datasets[0].data.shift();
     }
     chart.update();
-  };
+  }
 
-  const updateGauge = (chart, value, max) => {
-    const v = Math.max(0, Math.min(value, max));
-    chart.data.datasets[0].data[0] = v;
-    chart.data.datasets[0].data[1] = max - v;
-    chart.update();
-  };
-
-  const updateCircularGauge = (chart, value, min, max) => {
+  function updateCircularGauge(chart, value, min, max) {
     const v = Math.max(min, Math.min(value, max));
     const percent = (v - min) / (max - min);
 
     chart.data.datasets[0].data[0] = percent;
     chart.data.datasets[0].data[1] = 1 - percent;
     chart.update();
-  };
+  }
+
+  // Inicializar gráficos
+  function initCharts() {
+    state.charts.temp = createLineChart(
+      document.getElementById('tempChart').getContext('2d'),
+      'Temperatura',
+      '#FF6B6B'
+    );
+
+    state.charts.luz = createLineChart(
+      document.getElementById('luzChart').getContext('2d'),
+      'Luz',
+      '#FFB74D'
+    );
+
+    state.charts.mq = createLineChart(
+      document.getElementById('mqChart').getContext('2d'),
+      'Calidad del Aire',
+      '#81c784'  // Verde para calidad de aire
+    );
+
+    state.charts.pres = createCircularGauge(
+      document.getElementById('presChart').getContext('2d'),
+      950,   // mínimo típico
+      1050,  // máximo típico
+      '#FFD93D'
+    );
+  }
 
   /* ============================
-        ELEMENTOS DEL DOM
+          MQTT
   ============================ */
-  const humFill = document.getElementById('hum-fill');
-  const humPerc = document.getElementById('hum-perc');
+  function connectMQTT() {
+    state.mqttClient = mqtt.connect(
+      'wss://13c68f6415524cbca32f0d357e1159f6.s1.eu.hivemq.cloud:8884/mqtt',
+      mqttOptions
+    );
 
-  const tempVal = document.getElementById('temp-value');
-  const humVal = document.getElementById('hum-value');
-  const presVal = document.getElementById('pres-value');
-  const luzVal = document.getElementById('luz-value');
-  const mqVal = document.getElementById('mq-value');
+    state.mqttClient.on('connect', () => {
+      elements.statusIndicator.classList.replace('disconnected', 'connected');
+      elements.statusText.textContent = 'Conectado';
+      state.mqttClient.subscribe('sensores/data');
+    });
 
-  const presCenter = document.getElementById('pres-center');
-  const mqCenter = document.getElementById('mq-center');
+    state.mqttClient.on('close', () => {
+      elements.statusIndicator.classList.replace('connected', 'disconnected');
+      elements.statusText.textContent = 'Desconectado';
+    });
 
+    state.mqttClient.on('message', (topic, message) => {
+      if (topic !== 'sensores/data') return;
+
+      try {
+        const data = JSON.parse(message.toString());
+
+        // Temperatura
+        if (data.temp !== undefined) {
+          elements.tempVal.textContent = data.temp + ' °C';
+          addLineData(state.charts.temp, data.temp);
+        }
+
+        // Humedad
+        if (data.hum !== undefined) {
+          const h = Number(data.hum).toFixed(2);
+          elements.humVal.textContent = h + ' %';
+          elements.humPerc.textContent = h + ' %';
+          elements.humFill.style.height = data.hum + '%';
+        }
+
+        // Presión
+        if (data.pres !== undefined) {
+          const h = Number(data.pres).toFixed(2);
+          elements.presVal.textContent = h + ' hPa';
+          elements.presCenter.textContent = h + ' hPa';
+          updateCircularGauge(state.charts.pres, data.pres, 950, 1050);
+        }
+
+        // Luz
+        if (data.luz !== undefined) {
+          elements.luzVal.textContent = data.luz + ' %';
+          addLineData(state.charts.luz, data.luz);
+        }
+
+        // Calidad del aire
+        if (data.mq !== undefined) {
+          elements.mqVal.textContent = data.mq + ' %';
+          addLineData(state.charts.mq, data.mq);
+        }
+
+      } catch (e) {
+        console.error('JSON inválido:', e);
+      }
+    });
+  }
 
   /* ============================
-        MQTT
+          CONTROL DE ACTUADORES
   ============================ */
-
-  const statusIndicator = document.getElementById('status-indicator');
-  const statusText = document.getElementById('status-text');
-
-  const optionsMQTT = {
-    username: 'wzzz1',
-    password: 'wesarMDFK21',
-    keepalive: 60,
-    clean: true,
-    reconnectPeriod: 5000,
-    connectTimeout: 30000
-  };
-
-  const client = mqtt.connect(
-    'wss://13c68f6415524cbca32f0d357e1159f6.s1.eu.hivemq.cloud:8884/mqtt',
-    optionsMQTT
-  );
-
-  client.on('connect', () => {
-    statusIndicator.classList.replace('disconnected', 'connected');
-    statusText.textContent = 'Conectado';
-    client.subscribe('sensores/data');
-  });
-
-  client.on('close', () => {
-    statusIndicator.classList.replace('connected', 'disconnected');
-    statusText.textContent = 'Desconectado';
-  });
-
-
-  /* ============================
-        LLEGADA DE DATOS
-  ============================ */
-  client.on('message', (topic, message) => {
-    if (topic !== 'sensores/data') return;
-
-    try {
-      const d = JSON.parse(message.toString());
-
-      /* === TEMPERATURA === */
-      if (d.temp !== undefined) {
-        tempVal.textContent = d.temp + ' °C';
-        addLineData(tempChart, d.temp);
-      }
-
-      /* === HUMEDAD === */
-      if (d.hum !== undefined) {
-        const h = Number(d.hum).toFixed(2);
-        humVal.textContent = h + ' %';
-        humPerc.textContent = h + ' %';
-        humFill.style.height = d.hum + '%';
-      }
-
-      /* === PRESIÓN (GAUGE SEMICIRCULAR) === */
-      if (d.pres !== undefined) {
-        const h = Number(d.pres).toFixed(2);
-        presVal.textContent = h + ' hPa';
-        presCenter.textContent = h + ' hPa';
-        updateCircularGauge(presChart, d.pres, 950, 1050);
-      }
-
-      /* === LUZ === */
-      if (d.luz !== undefined) {
-        luzVal.textContent = d.luz + ' %';
-        addLineData(luzChart, d.luz);
-      }
-
-      /* === MQ-135 (CALIDAD DE AIRE) === */
-      if (d.mq !== undefined) {
-        mqVal.textContent = d.mq + ' %';
-        mqCenter.textContent = d.mq;
-        updateGauge(mqChart, d.mq, 500);
-      }
-
-    } catch (e) {
-      console.error('JSON inválido:', e);
-    }
-
-  });
-
-  /* ============================
-    PUBLICAR COMANDOS (RESTORE)
-    ============================ */
-
   function publishCommand(obj) {
     if (!isAuthenticated()) {
       console.warn('Usuario no autenticado — comando no enviado', obj);
       return;
     }
-    if (!client || !client.connected) {
+    if (!state.mqttClient || !state.mqttClient.connected) {
       console.warn('MQTT no conectado — comando no enviado', obj);
       return;
     }
     try {
-      client.publish('actuadores/control', JSON.stringify(obj));
+      state.mqttClient.publish('actuadores/control', JSON.stringify(obj));
       console.log('Comando enviado (actuadores/control):', obj);
     } catch (e) {
       console.error('Error publicando comando:', e);
     }
   }
 
-  document.getElementById('btn-auto').addEventListener('click', () => publishCommand({ auto: 1 }));
-  document.getElementById('btn-auto-off').addEventListener('click', () => publishCommand({ auto: 0 }));
+  // Asignar eventos a botones de control
+  const controlButtons = {
+    'btn-auto': { auto: 1 },
+    'btn-auto-off': { auto: 0 },
+    'btn-luz-on': { luz: 1 },
+    'btn-luz-off': { luz: 0 },
+    'btn-alarma-on': { alarma: 1 },
+    'btn-alarma-off': { alarma: 0 },
+    'btn-buzz-on': { buzzer: 1 },
+    'btn-buzz-off': { buzzer: 0 },
+    'btn-motor-on': { motor: 1 },
+    'btn-motor-off': { motor: 0 }
+  };
 
-  document.getElementById('btn-luz-on').addEventListener('click', () => publishCommand({ luz: 1 }));
-  document.getElementById('btn-luz-off').addEventListener('click', () => publishCommand({ luz: 0 }));
+  Object.keys(controlButtons).forEach(id => {
+    document.getElementById(id).addEventListener('click', () => {
+      publishCommand(controlButtons[id]);
+    });
+  });
 
-  document.getElementById('btn-alarma-on').addEventListener('click', () => publishCommand({ alarma: 1 }));
-  document.getElementById('btn-alarma-off').addEventListener('click', () => publishCommand({ alarma: 0 }));
+  /* ============================
+          INICIALIZACIÓN
+  ============================ */
+  function init() {
+    updateAuthUI();
+    initCharts();
+    connectMQTT();
+  }
 
-  document.getElementById('btn-buzz-on').addEventListener('click', () => publishCommand({ buzzer: 1 }));
-  document.getElementById('btn-buzz-off').addEventListener('click', () => publishCommand({ buzzer: 0 }));
-
-  document.getElementById('btn-motor-on').addEventListener('click', () => publishCommand({ motor: 1 }));
-  document.getElementById('btn-motor-off').addEventListener('click', () => publishCommand({ motor: 0 }));
-
+  // Iniciar la aplicación
+  init();
 });
